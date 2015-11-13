@@ -7,7 +7,7 @@
 #define DICT_FILE "/hangman/words"
 
 // Set Maximum Acceptable Word Size
-#define MAX_WORD_SZ 36  // Size is supercalifragilisticexpialidocious +2
+#define MAX_WORD_SZ 35  // Size is supercalifragilisticexpialidocious +1 for \n
 
 #include <stdio.h>
 #include <errno.h>      // Error Handling
@@ -19,8 +19,7 @@
 // int check_print(char guess, char s_word, int round);
 
 int main(int argc, char *argv[]){
-    // ADD Random init initialize
-
+    srand(time(NULL));      // For picking a random word from the dictionary.
 
     FILE *dict;             // Pointer to dictionary file stream.
     char *dict_path = "DICT_FILE";   // Actual path to dictionary file.
@@ -57,26 +56,28 @@ int main(int argc, char *argv[]){
         char *tmp_word = NULL;              // Current word in dictionary file.
         size_t tmp_word_sz = 0;             // Size in bytes of current word.
         int l = 1;                          // Line Count
+        char chosen_word[36] = {'\0'};
         
 // Cycle through dictionary, pick a word at random, return that word.
         while((int)(tmp_word_sz = getline(&tmp_word, &tmp_word_sz, dict)) != -1){ // Until EOF
+/*debug*/   printf("CHECKING: %s\n", tmp_word);
             if (tmp_word_sz <= MAX_WORD_SZ && tmp_word_sz > 1){
-                // Resivoir sampling
-/*
-                if (tmp_word  if (rand() % n == 0)){
-                    
+                // Resavoir sampling to pick a random word from the file.
+                if ((rand() / (float)RAND_MAX) <= (1.0 / l)) {
+                    strncpy(chosen_word, tmp_word, 36);
+/*debug*/           printf("Setting: %s\n", chosen_word);
+                }else{
+                    continue;
                 }
- 
- */
-/* Debug */     printf("LINE %d... %zu\tbytes...\tWord: %s", l+1, tmp_word_sz, tmp_word);
-                
-    
-                // Pick Word
-            }else {
-                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
+                l++;
             }
-            l++;
+                // Pick Word
+            else {
+//                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
+            }
         }
+/* Debug */         printf("%s is now the secret word! at %zu\tbytes...\tWord: %s", chosen_word, tmp_word_sz, tmp_word);
+    //BUG - Do error checking on characters
     free(tmp_word);
     fclose(dict);
     exit(0);
