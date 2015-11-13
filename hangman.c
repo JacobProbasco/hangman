@@ -4,7 +4,7 @@
 
 ////////Change to ~/.words/////////
 // Set Default Dictionary File Locaiton
-#define DICT_FILE "/hangman/words"
+#define DICT_FILE getenv("HOME"), strncat(dict_path, "/.words", 7);
 
 // Set Maximum Acceptable Word Size
 #define MAX_WORD_SZ 35  // Size is supercalifragilisticexpialidocious +1 for \n
@@ -18,59 +18,61 @@
 int dict_pick(char *chosen_word, char *d_path, int *err);
 
 int main(int argc, char *argv[]){
-    srand(time(NULL));      // For picking a random word from the dictionary.
+    // External resources
+    srand((int)time(NULL));             // For dict_pick()
+    extern int errno ;                  // Error handling
 
-    char *dict_path = "DICT_FILE";   // Actual path to dictionary file.
-    int error_n;            // Error Number Place-holder
-    char secr_word[36] = { '\0' };
-    extern int errno ;
-    
-    if(argc > 2){           // Check for more than one argument, error.
+    char *dict_path = "DICT_FILE";      // Actual path to dictionary file.
+    int error_n;                        // Place-holder, error number
+    char secr_word[36] = { '\0' };      // Place-holder, secret word
+
+    if(argc > 2){                       // Check for more than one argument, error.
         error_n = errno;
         fprintf(stderr, "Error in opening %s: %s\n", argv[0], strerror(error_n));
-        printf("Hangman Usage: %s <dictionary file>\n If no file is given, dictionary location defaults to DICT_FILE", argv[0]);
-        return 7;           // Argument List too Long.
-    }else if(argc == 2){       // Check for user-provided dictionary.
-        dict_path = argv[1];       // Set to user-provided path.
+        printf("Hangman Usage: %s <dictionary file absolute path>\n If no file is given, dictionary location defaults to DICT_FILE", argv[0]);
+        return 7;                       // Argument List too Long.
+    }else if(argc == 2){                // Check for user-provided dictionary.
+        dict_path = argv[1];            // Set to user-provided path.
     }else{
-        dict_path = DICT_FILE;
-// BUG: IMPORT local environment to make relative to home. Import Environment
+        // Set default path to Dictionary file.
+        dict_path = DICT_FILE
     }
     
+    // Pick a word from the dictionary
     dict_pick(secr_word, dict_path, &errno);
     
-
+/*debug*/
+    printf("%s is now the secret word!\n", secr_word);
+    
+    
+    
     
 }
 
 int dict_pick(char *chosen_word, char *d_path, int *err){
 
-
-    FILE *dict;             // Pointer to dictionary file stream.
-    
-    // Open Dictionary
-    
+    FILE *dict;                    // Pointer to dictionary file stream.
     dict = fopen(d_path, "r");
     
-    // Address Errors in Opening Dictionary
+    // Account for Errors in Opening Dictionary File
     if (dict == NULL){
         fprintf(stderr, " Error opening dictionary file at %s\n %s\n", d_path, strerror(*err));
-        return 2;       // No such file or directory
+        return 2;                           // No such file or directory
     }else{
-        // MOVE to FUNC dict_pick
-        
+    
         char *tmp_word = NULL;              // Current word in dictionary file.
         size_t tmp_word_sz = 0;             // Size in bytes of current word.
         int l = 1;                          // Line Count
         
         // Cycle through dictionary, pick a word at random, return that word.
-        while((int)(tmp_word_sz = getline(&tmp_word, &tmp_word_sz, dict)) != -1){ // Until EOF
-            /*debug*/   printf("CHECKING: %s\n", tmp_word);
+        while((int)(tmp_word_sz = getline(&tmp_word, &tmp_word_sz, dict)) != -1){
+                   // Populate tmp_word one line at a time until EOF
+// debug    printf("CHECKING: %s\n", tmp_word);
             if (tmp_word_sz <= MAX_WORD_SZ && tmp_word_sz > 1){
                 // Resavoir sampling to pick a random word from the file.
                 if ((rand() / (float)RAND_MAX) <= (1.0 / l)) {
                     strncpy(chosen_word, tmp_word, 36);
-                    /*debug*/           printf("Setting: %s\n", chosen_word);
+// debug            printf("Setting: %s\n", chosen_word);
                 }else{
                     continue;
                 }
@@ -81,14 +83,12 @@ int dict_pick(char *chosen_word, char *d_path, int *err){
                 //                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
             }
         }
-        /* Debug */         printf("%s is now the secret word! at %zu\tbytes...\tWord: %s", chosen_word, tmp_word_sz, tmp_word);
-        //BUG - Do error checking on characters
+
+// BUG - Do error checking on characters
         free(tmp_word);
         fclose(dict);
-        exit(0);
     }
-    
-
+    return 0;
 }
 
 /*
