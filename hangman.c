@@ -15,73 +15,79 @@
 #include <stdlib.h>
 #include <time.h>
 
-// void dict_pick(FILE *dict, long dict_sz, char s_word);
-// int check_print(char guess, char s_word, int round);
+int dict_pick(char *chosen_word, char *d_path, int *err);
 
 int main(int argc, char *argv[]){
     srand(time(NULL));      // For picking a random word from the dictionary.
 
-    FILE *dict;             // Pointer to dictionary file stream.
     char *dict_path = "DICT_FILE";   // Actual path to dictionary file.
-    
     int error_n;            // Error Number Place-holder
-
-// BUG: IMPORT local environment to make relative to home. Import Environment
+    char secr_word[36] = { '\0' };
+    extern int errno ;
     
     if(argc > 2){           // Check for more than one argument, error.
-        extern int errno ;
         error_n = errno;
         fprintf(stderr, "Error in opening %s: %s\n", argv[0], strerror(error_n));
         printf("Hangman Usage: %s <dictionary file>\n If no file is given, dictionary location defaults to DICT_FILE", argv[0]);
         return 7;           // Argument List too Long.
-     }else if(argc == 2){       // Check for user-provided dictionary.
-         dict_path = argv[1];       // Set to user-provided path.
-     }else{
-         dict_path = DICT_FILE;
-     }
+    }else if(argc == 2){       // Check for user-provided dictionary.
+        dict_path = argv[1];       // Set to user-provided path.
+    }else{
+        dict_path = DICT_FILE;
+// BUG: IMPORT local environment to make relative to home. Import Environment
+    }
+    
+    dict_pick(secr_word, dict_path, &errno);
+    
+
+    
+}
+
+int dict_pick(char *chosen_word, char *d_path, int *err){
+
+
+    FILE *dict;             // Pointer to dictionary file stream.
     
     // Open Dictionary
-
-    dict = fopen(dict_path, "r");
+    
+    dict = fopen(d_path, "r");
     
     // Address Errors in Opening Dictionary
     if (dict == NULL){
-        extern int errno ;
-        error_n = errno;
-        fprintf(stderr, " Error opening dictionary file at %s\n %s\n", dict_path, strerror(error_n));
+        fprintf(stderr, " Error opening dictionary file at %s\n %s\n", d_path, strerror(*err));
         return 2;       // No such file or directory
     }else{
-// MOVE to FUNC dict_pick
-
+        // MOVE to FUNC dict_pick
+        
         char *tmp_word = NULL;              // Current word in dictionary file.
         size_t tmp_word_sz = 0;             // Size in bytes of current word.
         int l = 1;                          // Line Count
-        char chosen_word[36] = {'\0'};
         
-// Cycle through dictionary, pick a word at random, return that word.
+        // Cycle through dictionary, pick a word at random, return that word.
         while((int)(tmp_word_sz = getline(&tmp_word, &tmp_word_sz, dict)) != -1){ // Until EOF
-/*debug*/   printf("CHECKING: %s\n", tmp_word);
+            /*debug*/   printf("CHECKING: %s\n", tmp_word);
             if (tmp_word_sz <= MAX_WORD_SZ && tmp_word_sz > 1){
                 // Resavoir sampling to pick a random word from the file.
                 if ((rand() / (float)RAND_MAX) <= (1.0 / l)) {
                     strncpy(chosen_word, tmp_word, 36);
-/*debug*/           printf("Setting: %s\n", chosen_word);
+                    /*debug*/           printf("Setting: %s\n", chosen_word);
                 }else{
                     continue;
                 }
                 l++;
             }
-                // Pick Word
+            // Pick Word
             else {
-//                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
+                //                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
             }
         }
-/* Debug */         printf("%s is now the secret word! at %zu\tbytes...\tWord: %s", chosen_word, tmp_word_sz, tmp_word);
-    //BUG - Do error checking on characters
-    free(tmp_word);
-    fclose(dict);
-    exit(0);
+        /* Debug */         printf("%s is now the secret word! at %zu\tbytes...\tWord: %s", chosen_word, tmp_word_sz, tmp_word);
+        //BUG - Do error checking on characters
+        free(tmp_word);
+        fclose(dict);
+        exit(0);
     }
+    
 
 }
 
