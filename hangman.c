@@ -24,9 +24,6 @@ int main(int argc, char *argv[]){
 
     FILE *dict;             // Pointer to dictionary file stream.
     char *dict_path = "DICT_FILE";   // Actual path to dictionary file.
-    char *tmp_word = NULL;  // Current word in dictionary file.
-    size_t tmp_len = 0;     // Length of current word.
-    ssize_t word_sz;
     
     int error_n;            // Error Number Place-holder
 
@@ -39,7 +36,7 @@ int main(int argc, char *argv[]){
         printf("Hangman Usage: %s <dictionary file>\n If no file is given, dictionary location defaults to DICT_FILE", argv[0]);
         return 7;           // Argument List too Long.
      }else if(argc == 2){       // Check for user-provided dictionary.
-         dict_path = argv[1]; // Set to user-provided path.
+         dict_path = argv[1];       // Set to user-provided path.
      }else{
          dict_path = DICT_FILE;
      }
@@ -53,22 +50,38 @@ int main(int argc, char *argv[]){
         extern int errno ;
         error_n = errno;
         fprintf(stderr, " Error opening dictionary file at %s\n %s\n", dict_path, strerror(error_n));
-        return 2;           // No such file or directory
+        return 2;       // No such file or directory
     }else{
-        for (int i = 0 ; i >= 0; i++){  // Counter for line number
-            while ((word_sz = getline(&tmp_word, &tmp_len, dict)) != -1) {
-                if (word_sz <= MAX_WORD_SZ && word_sz > 1){
-    /* Debug */     printf("Length of Current line is: %zu bytes.\n", word_sz);
-    /* Debug */     printf("%s", tmp_word);
-                } else if (word_sz > 36 || word_sz <= 1){
-                    printf("Found word of incompatible size on line %s in dictionary file.\nContinuing without errant word.", tmp_word);
+// MOVE to FUNC dict_pick
+
+        char *tmp_word = NULL;              // Current word in dictionary file.
+        size_t tmp_word_sz = 0;             // Size in bytes of current word.
+        int l = 1;                          // Line Count
+        
+// Cycle through dictionary, pick a word at random, return that word.
+        while((int)(tmp_word_sz = getline(&tmp_word, &tmp_word_sz, dict)) != -1){ // Until EOF
+            if (tmp_word_sz <= MAX_WORD_SZ && tmp_word_sz > 1){
+                // Resivoir sampling
+/*
+                if (tmp_word  if (rand() % n == 0)){
+                    
                 }
+ 
+ */
+/* Debug */     printf("LINE %d... %zu\tbytes...\tWord: %s", l+1, tmp_word_sz, tmp_word);
+                
+    
+                // Pick Word
+            }else {
+                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
             }
+            l++;
         }
-        free(tmp_word);
-        fclose(dict);
-        exit(0);
+    free(tmp_word);
+    fclose(dict);
+    exit(0);
     }
+
 }
 
 /*
