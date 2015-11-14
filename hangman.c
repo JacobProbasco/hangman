@@ -18,6 +18,7 @@
 
 int dict_pick(char *chosen_word, char *d_path, int *err);
 char get_input(FILE stdin);
+void check_guess(char *word, char *disp, char *guess_hist, char guess, int app);
 void prnt_array(char *title, char *array);
 
 int main(int argc, char *argv[]){
@@ -56,13 +57,13 @@ int main(int argc, char *argv[]){
     int game = 1;       // User playing game (yes)
     int appendage;      // Number of body parts left on the man.
     char plyr_guesses[35] = { '\0'};
-    char display_array[36] = { '\0' };
+    char display_string[36] = { '\0' };
     
     while (game == 1){
-        // Set up Print Arrays
+        // Set up Display Arrays
         for(int i = 0; secr_word[i] != '\n'; i++){
-            if (isalpha(secr_word[i]) && (secr_word[i] != '\n')){
-                display_array[i] = '_';
+            if (isalpha(secr_word[i])){
+                display_string[i] = '_';
             }else{
                 secr_word[i] = '\0';
             }
@@ -83,14 +84,25 @@ int main(int argc, char *argv[]){
         }
 
     while (round >= 1){
-        for (appendage = 7; appendage > 0; appendage--){
-            char *word_str = "The word:\n";
-            prnt_array(word_str, display_array);
-            char *guess_str = "Your Guesses So Far:\n";
+        appendage = 7;
+        while (appendage > 0){
+            char *word_str = "The Word:\n";
+            prnt_array(word_str, display_string);
+            char *guess_str = "Guessed So Far:\n";
             prnt_array(guess_str, plyr_guesses);
-  
+            
+            char guess = get_input(*stdin);
+            
+            check_guess(secr_word, display_string, plyr_guesses, guess, appendage);
+
+            }
+            
+
+            
         }
-    
+
+        }
+        return 0;
     }
     
      // Random init
@@ -110,10 +122,7 @@ int main(int argc, char *argv[]){
      * Print array
      */
 // ADD Stats
-    return 0;
 
-    }
-}
 
 int dict_pick(char *chosen_word, char *d_path, int *err){
 
@@ -181,13 +190,29 @@ char get_input(FILE stdin){
     return '!';
 }
 
+
+void check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
+// X - Check to see if word = the secret word
+
+    for (int x = 0; x < (int)strlen(word); x++){
+        // If guess is secret word
+        if (guess == word[x]){
+            disp[x] = guess;
+            word[x] = '_';
+            strncat(guess_hist, &guess, 1);
+        }else {
+            --app;
+            printf("Incorrect.\n%d appendages left.", app);
+        }
+    }
+}
+
 void prnt_array(char *title, char *array){
     if(title != NULL){
-        printf("%s/n", title);
+        printf("%s\n", title);
     }
     for(int i=0; i != '\n'; i++){
         printf("%c ", array[i]);
-        printf("\n");
     }
-
+    printf("\n");
 }
