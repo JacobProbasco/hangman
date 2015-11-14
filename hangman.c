@@ -56,17 +56,17 @@ int main(int argc, char *argv[]){
     int round = 0; 		// Number of rounds  played. When negative, game exits.
     int wins = 0;		// Number of wins during this runtime.
     while (playing == 1){
-        // Start Play
+    // Prompt Player to Start Round or continue based on whether this is the initial round.
         if (round > 0){
             printf("Round %d.\nYou have lost %d men so far.\nDo you want to keep playing?\n(y for yes. <!> to quit.)\n", round, (unsigned)round - wins);
         } else {
             printf("ARE YOU READY TO PLAY HANGMAN?\n(y for yes. <!> to quit.)\n");
-            
         }
         
+    // Request input
         char input = get_input(*stdin);
         
-        // Start MOVE1 to get_input
+// Start Move this to get_input
         if (input == ('y' | 'Y')){
             round++;
             
@@ -77,13 +77,14 @@ int main(int argc, char *argv[]){
         } else {
             printf("Invalid input.\n(type y for yes or <!> to quit.");
         }
-        // End MOVE1 to get_input
+// End Move this to get_input
         
-        while (round >= 1){
+        for ( ;round >= 1; round++){
         // Reset each round
-        int appendage = 7;      // Number of body parts left on the man.
-        char plyr_guesses[35] = { '\0' };
-        char display_string[36] = { '\0' };
+            int appendage = 7;      // Number of body parts left on the man.
+            char plyr_guesses[35] = { '\0' };
+            char display_string[36] = { '\0' };
+            int turns = 1;          // Number of turns.
             
             // Set up Display Arrays
             // Put the number of blanks in the word into an array of the same size.
@@ -96,15 +97,27 @@ int main(int argc, char *argv[]){
                 }
             }
             
-            char *word_str = "The Word:\n";
-            prnt_array(word_str, display_string);
-            char *guess_str = "Guessed So Far:\n";
-            prnt_array(guess_str, plyr_guesses);
+            for (; turns > 0; turns++){
                 
-            char guess = get_input(*stdin);
-            playing = check_guess(secr_word, display_string, plyr_guesses, guess, appendage);
+                char *word_str = "The Word:\n";
+                prnt_array(word_str, display_string);
+                char *guess_str = "Guessed So Far:\n";
+                prnt_array(guess_str, plyr_guesses);
+                
+                char guess = get_input(*stdin);
+                int g_result = check_guess(secr_word, display_string, plyr_guesses, guess, appendage);
+                
+                if (g_result == 0){
+// CREATE AND CALL Function to Save round data
+                    turns = -1;
+                    round = 0;
+                    playing = 0;
+                }
+                
+            }
             
         }
+        
     }
     return 0;
 }
@@ -207,22 +220,13 @@ int check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
             }
         }
     }
-/* old method
-    if (match > 0){
-        for (int x = 0; x < (int)strlen(word); x++){
-            // X - Check to see if word = the secret word
-            if (disp[x] != word[x]){
-                break;
-            }
-        }
-    }
-*/
     if (match > 0){
         strncat(guess_hist, &guess, 1);
     } else {
         printf("Incorrect.\n%d appendages left.", app);
-        --app;
-        if (app == 0){
+        // Add a body part to the gallows
+        app++;
+        if (app == 6){
             return -1;              // return -1, user lost
         } else {
             return 1;
@@ -233,18 +237,8 @@ int check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
 
 
 void prnt_array(char *title, char *array){
-//FLOURISH: Clear Screen to refresh.
-    
-    
-    
-    /* FUNC check_print
-     * If (Check for win state)
-     * Draw the number of blanks along with correct guesses so far.
-     * Prompt and recieve guess. *** only one letter ***
-     * Iterate through word finding instances of those letters
-     * If found, set print array to that value.
-     * Print array
-     */
+// FLOURISH: Clear Screen to refresh.
+// FLOURISH: Print the man to be hung.
 
     if(title != NULL){
         printf("%s\n", title);
