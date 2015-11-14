@@ -18,10 +18,11 @@
 
 int dict_pick(char *chosen_word, char *d_path, int *err);
 char get_input(FILE stdin);
-void check_guess(char *word, char *disp, char *guess_hist, char guess, int app);
+int check_guess(char *word, char *disp, char *guess_hist, char guess, int app);
 void prnt_array(char *title, char *array);
 
 int main(int argc, char *argv[]){
+    
     // External resources
     srand((int)time(NULL));             // For dict_pick()
     extern int errno ;                  // Error handling
@@ -30,7 +31,7 @@ int main(int argc, char *argv[]){
     int error_n;                        // Place-holder, error number
     char secr_word[36] = { '\0' };      // Place-holder, secret word
     
-    // Manage optional command-line arguments
+// Manage optional command-line arguments
     if(argc > 2){                       // Check for more than one argument, error.
         error_n = errno;
         fprintf(stderr, "Error in opening %s: %s\n", argv[0], strerror(error_n));
@@ -43,90 +44,71 @@ int main(int argc, char *argv[]){
         dict_path = DICT_FILE
     }
     
-    // Pick a word from the dictionary
+// Pick a word from the dictionary
     dict_pick(secr_word, dict_path, &errno);
     
-/*debug*/
-    printf("%s is now the secret word!\n", secr_word);
+/*debug*/   printf("%s is now the secret word!\n", secr_word);
     
-    // Persistent Throughout Play - Will be saved at end of game
-    int round = 0; 		// Number of rounds  played
+// Game Setup
+/// Persistent Variables
+/// Saved at end of game or on error.
+    int playing = 1;
+    int round = 0; 		// Number of rounds  played. When negative, game exits.
     int wins = 0;		// Number of wins during this runtime.
-    
-    // Reset each round
-    int game = 1;       // User playing game (yes)
-    int appendage;      // Number of body parts left on the man.
-    char plyr_guesses[35] = { '\0'};
-    char display_string[36] = { '\0' };
-    
-    while (game == 1){
-        // Set up Display Arrays
-        for(int i = 0; i < (int)strlen(secr_word); i++){
-            if (isalpha(secr_word[i])
-                && (secr_word[i] != '\n')){
-                display_string[i] = '_';
-            }else{
-                secr_word[i] = '\0';
-            }
-        }
-        
+    while (playing == 1){
         // Start Play
-        if (game > 1){
+        if (round > 0){
             printf("Round %d.\nYou have lost %d men so far.\nDo you want to keep playing?\n(y for yes. <!> to quit.)\n", round, (unsigned)round - wins);
         } else {
             printf("ARE YOU READY TO PLAY HANGMAN?\n(y for yes. <!> to quit.)\n");
+            
         }
         
         char input = get_input(*stdin);
         
+        // Start MOVE1 to get_input
         if (input == ('y' | 'Y')){
             round++;
+            
         } else if(input == ('n' | 'N')){
             
         } else if(input == ( '@' )){
-            game = 0;
+            round = -1;
         } else {
             printf("Invalid input.\n(type y for yes or <!> to quit.");
         }
-
-    while (round >= 1){
-        appendage = 7;
-        while (appendage > 0){
+        // End MOVE1 to get_input
+        
+        while (round >= 1){
+        // Reset each round
+        int appendage = 7;      // Number of body parts left on the man.
+        char plyr_guesses[35] = { '\0' };
+        char display_string[36] = { '\0' };
+            
+            // Set up Display Arrays
+            // Put the number of blanks in the word into an array of the same size.
+            for(int i = 0; i < (int)strlen(secr_word); i++){
+                if (isalpha(secr_word[i])
+                    && (secr_word[i] != '\n')){
+                    display_string[i] = '_';
+                }else{
+                    secr_word[i] = '\0';
+                }
+            }
+            
             char *word_str = "The Word:\n";
             prnt_array(word_str, display_string);
             char *guess_str = "Guessed So Far:\n";
             prnt_array(guess_str, plyr_guesses);
-            
+                
             char guess = get_input(*stdin);
-            
-            check_guess(secr_word, display_string, plyr_guesses, guess, appendage);
-
-            }
-            
-
+            playing = check_guess(secr_word, display_string, plyr_guesses, guess, appendage);
             
         }
-
-        }
-        return 0;
     }
-    
-     // Random init
-     
-     // FUNC setup
-     // While round != 0;
+    return 0;
+}
 
-    // Put the number of blanks in the word into an array of the same size.
-    
-    /* FUNC check_print
-     * If (Check for win state)
-     * // Optional: Clear the screen.
-     * Draw the number of blanks along with correct guesses so far.
-     * Prompt and recieve guess. *** only one letter ***
-     * Iterate through word finding instances of those letters
-     * If found, set print array to that value.
-     * Print array
-     */
 // ADD Stats
 
 
@@ -198,43 +180,72 @@ char get_input(FILE stdin){
 }
 
 
-void check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
-// X - Check to see if word = the secret word
-
-    int match = 0; // increments when a match is found.
-    
+int check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
+    int match = 0;          // increments when a match is found.
+// X - Check to see if word guessed before
     for (int x = 0; x < (int)strlen(word); x++){
-        // If guess is secret word
-        if (guess == word[x]){
-            // Make sure it wasn't guessed before
-            for (int y = 0; y < (int)strlen(guess_hist); y++){
-                if (guess == guess_hist[y]){
-                    printf("You already Guessed that Letter. Try again.");
-                    x = 100;
-                    y = 100;
-                    break;
-                } else if (match > 0){
-                    disp[x] = guess;
-                } else if (match == 0){
-                    match++;
-                    disp[x] = guess;
-                    
+        if (guess == guess_hist[x]){
+            printf("You already Guessed that Letter. Try again.\n");
+            return 1;       // Returns 1 to game; still playing.
+        }
+    }
+// Y - Check to see if word = the secret word; then check for win.
+    for (int y = 0; y < (int)strlen(word); y++){
+        if (guess == word[y]){
+            disp[y] = guess;        // Set corresponding display character to the guess.
+            match++;
+            
+            int wincrement = 0;
+            
+            if (disp[y] == word[y]){
+                wincrement++;
+                if (wincrement == (int)strlen(word)){
+                    return 0;       // Return 0; User won.
                 }
+            } else if (match > 0){
+                return 1;           // Return 1; Still Playing
             }
         }
+    }
+/* old method
+    if (match > 0){
+        for (int x = 0; x < (int)strlen(word); x++){
+            // X - Check to see if word = the secret word
+            if (disp[x] != word[x]){
+                break;
+            }
+        }
+    }
+*/
+    if (match > 0){
         strncat(guess_hist, &guess, 1);
-
-    }
-    
-    if (match == 0){
-        --app;
+    } else {
         printf("Incorrect.\n%d appendages left.", app);
-        return;
+        --app;
+        if (app == 0){
+            return -1;              // return -1, user lost
+        } else {
+            return 1;
+        }
     }
-    
+    return -2;                      // Error
 }
 
+
 void prnt_array(char *title, char *array){
+//FLOURISH: Clear Screen to refresh.
+    
+    
+    
+    /* FUNC check_print
+     * If (Check for win state)
+     * Draw the number of blanks along with correct guesses so far.
+     * Prompt and recieve guess. *** only one letter ***
+     * Iterate through word finding instances of those letters
+     * If found, set print array to that value.
+     * Print array
+     */
+
     if(title != NULL){
         printf("%s\n", title);
     }
@@ -242,4 +253,5 @@ void prnt_array(char *title, char *array){
         printf("%c ", array[i]);
     }
     printf("\n");
+
 }
