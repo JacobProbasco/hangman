@@ -61,13 +61,15 @@ int main(int argc, char *argv[]){
     
     while (game == 1){
         // Set up Display Arrays
-        for(int i = 0; secr_word[i] != '\n'; i++){
-            if (isalpha(secr_word[i])){
+        for(int i = 0; i < (int)strlen(secr_word); i++){
+            if (isalpha(secr_word[i])
+                && (secr_word[i] != '\n')){
                 display_string[i] = '_';
             }else{
                 secr_word[i] = '\0';
             }
         }
+        
         // Start Play
         if (game > 1){
             printf("Round %d.\nYou have lost %d men so far.\nDo you want to keep playing?\n(y for yes. <!> to quit.)\n", round, (unsigned)round - wins);
@@ -79,8 +81,12 @@ int main(int argc, char *argv[]){
         
         if (input == ('y' | 'Y')){
             round++;
-        } else {
+        } else if(input == ('n' | 'N')){
+            
+        } else if(input == ( '@' )){
             game = 0;
+        } else {
+            printf("Invalid input.\n(type y for yes or <!> to quit.");
         }
 
     while (round >= 1){
@@ -172,13 +178,13 @@ char get_input(FILE stdin){
 
     if (inpt == '!'){
         printf("Are you sure you want to quit? Type @ to confirm; # to play more.\n");
-        get_input(stdin);
-        return '\0';
+        return get_input(stdin);
+        
     }
     else if (inpt == ('@' | '#')){
         printf("See you again soon. Current Hangman stats are:\n");
         exit(0);
-        return '$';
+        return '@';
     }
     
     if(isalpha(inpt)){
