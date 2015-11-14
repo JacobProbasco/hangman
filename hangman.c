@@ -146,7 +146,7 @@ int dict_pick(char *chosen_word, char *d_path, int *err){
             if (tmp_word_sz <= MAX_WORD_SZ && tmp_word_sz > 1){
                 // Resavoir sampling to pick a random word from the file.
                 if ((rand() / (float)RAND_MAX) <= (1.0 / l)) {
-                    strncpy(chosen_word, tmp_word, 36);
+                    strcpy(chosen_word, tmp_word);
 // debug            printf("Setting: %s\n", chosen_word);
                 }else{
                     continue;
@@ -186,6 +186,7 @@ char get_input(FILE stdin){
     }else {
         printf("Your input must be a letter.\n");
         get_input(stdin);
+        return inpt;
     }
     return '!';
 }
@@ -194,17 +195,37 @@ char get_input(FILE stdin){
 void check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
 // X - Check to see if word = the secret word
 
+    int match = 0; // increments when a match is found.
+    
     for (int x = 0; x < (int)strlen(word); x++){
         // If guess is secret word
         if (guess == word[x]){
-            disp[x] = guess;
-            word[x] = '_';
-            strncat(guess_hist, &guess, 1);
-        }else {
-            --app;
-            printf("Incorrect.\n%d appendages left.", app);
+            // Make sure it wasn't guessed before
+            for (int y = 0; y < (int)strlen(guess_hist); y++){
+                if (guess == guess_hist[y]){
+                    printf("You already Guessed that Letter. Try again.");
+                    x = 100;
+                    y = 100;
+                    break;
+                } else if (match > 0){
+                    disp[x] = guess;
+                } else if (match == 0){
+                    match++;
+                    disp[x] = guess;
+                    
+                }
+            }
         }
+        strncat(guess_hist, &guess, 1);
+
     }
+    
+    if (match == 0){
+        --app;
+        printf("Incorrect.\n%d appendages left.", app);
+        return;
+    }
+    
 }
 
 void prnt_array(char *title, char *array){
