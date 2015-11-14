@@ -11,11 +11,14 @@
 
 #include <stdio.h>
 #include <errno.h>      // Error Handling
-#include <string.h>
+#include <string.h>     // Concatenation of chars
+#include <ctype.h>      // Character managment
 #include <stdlib.h>
 #include <time.h>
 
 int dict_pick(char *chosen_word, char *d_path, int *err);
+char get_input(FILE stdin);
+void prnt_array(char *title, char *array);
 
 int main(int argc, char *argv[]){
     // External resources
@@ -25,7 +28,8 @@ int main(int argc, char *argv[]){
     char *dict_path = "DICT_FILE";      // Actual path to dictionary file.
     int error_n;                        // Place-holder, error number
     char secr_word[36] = { '\0' };      // Place-holder, secret word
-
+    
+    // Manage optional command-line arguments
     if(argc > 2){                       // Check for more than one argument, error.
         error_n = errno;
         fprintf(stderr, "Error in opening %s: %s\n", argv[0], strerror(error_n));
@@ -44,9 +48,71 @@ int main(int argc, char *argv[]){
 /*debug*/
     printf("%s is now the secret word!\n", secr_word);
     
+    // Persistent Throughout Play - Will be saved at end of game
+    int round = 0; 		// Number of rounds  played
+    int wins = 0;		// Number of wins during this runtime.
     
+    // Reset each round
+    int game = 1;       // User playing game (yes)
+    int appendage;      // Number of body parts left on the man.
+    char plyr_guesses[35] = { '\0'};
+    char display_array[36] = { '\0' };
     
+    while (game == 1){
+        // Set up Print Arrays
+        for(int i = 0; secr_word[i] != '\n'; i++){
+            if (isalpha(secr_word[i]) && (secr_word[i] != '\n')){
+                display_array[i] = '_';
+            }else{
+                secr_word[i] = '\0';
+            }
+        }
+        // Start Play
+        if (game > 1){
+            printf("Round %d.\nYou have lost %d men so far.\nDo you want to keep playing?\n(y for yes. <!> to quit.)\n", round, (unsigned)round - wins);
+        } else {
+            printf("ARE YOU READY TO PLAY HANGMAN?\n(y for yes. <!> to quit.)\n");
+        }
+        
+        char input = get_input(*stdin);
+        
+        if (input == ('y' | 'Y')){
+            round++;
+        } else {
+            game = 0;
+        }
+
+    while (round >= 1){
+        for (appendage = 7; appendage > 0; appendage--){
+            char *word_str = "The word:\n";
+            prnt_array(word_str, display_array);
+            char *guess_str = "Your Guesses So Far:\n";
+            prnt_array(guess_str, plyr_guesses);
+  
+        }
     
+    }
+    
+     // Random init
+     
+     // FUNC setup
+     // While round != 0;
+
+    // Put the number of blanks in the word into an array of the same size.
+    
+    /* FUNC check_print
+     * If (Check for win state)
+     * // Optional: Clear the screen.
+     * Draw the number of blanks along with correct guesses so far.
+     * Prompt and recieve guess. *** only one letter ***
+     * Iterate through word finding instances of those letters
+     * If found, set print array to that value.
+     * Print array
+     */
+// ADD Stats
+    return 0;
+
+    }
 }
 
 int dict_pick(char *chosen_word, char *d_path, int *err){
@@ -83,39 +149,45 @@ int dict_pick(char *chosen_word, char *d_path, int *err){
                 //                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
             }
         }
-
-// BUG - Do error checking on characters
         free(tmp_word);
         fclose(dict);
-    }
     return 0;
 }
+}
 
-/*
-// Reset each round
-int play = 1;		// User playing (yes)
-int gues = 0;		// Numb. guesses in current round
+char get_input(FILE stdin){
+    char inpt;
+    
+    printf("Enter character: ");
+    inpt = fgetc(&stdin);
 
-// Persistent each round
-int round = 1; 		// Number of rounds  played
-int wins = 0;		// Number of wins
+    if (inpt == '!'){
+        printf("Are you sure you want to quit? Type @ to confirm; # to play more.\n");
+        get_input(stdin);
+        return '\0';
+    }
+    else if (inpt == ('@' | '#')){
+        printf("See you again soon. Current Hangman stats are:\n");
+        exit(0);
+        return '$';
+    }
+    
+    if(isalpha(inpt)){
+        return inpt;
+    }else {
+        printf("Your input must be a letter.\n");
+        get_input(stdin);
+    }
+    return '!';
+}
 
-char word;			// Word chosen from dictionary
+void prnt_array(char *title, char *array){
+    if(title != NULL){
+        printf("%s/n", title);
+    }
+    for(int i=0; i != '\n'; i++){
+        printf("%c ", array[i]);
+        printf("\n");
+    }
 
-// Random init
-
-// FUNC setup
-// While round != 0;
-// From "~/.words", choose random word, store into an array that is the size of that dictionary word. */
-// Count the number of letters in the word.
-// Put the number of blanks in the word into an array of the same size.
-
-/* FUNC check_print
-* If (Check for win state)
-* // Optional: Clear the screen.
-* Draw the number of blanks along with correct guesses so far.
-* Prompt and recieve guess. *** only one letter ***
-* Iterate through word finding instances of those letters
-* If found, set print array to that value.
-* Print array
-*/
+}
