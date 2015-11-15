@@ -18,7 +18,7 @@
 
 int dict_pick(char *chosen_word, char *d_path, int *err);
 char get_input(FILE stdin);
-int check_guess(char *word, char *disp, char *guess_hist, char guess, int app);
+int check_guess(char *word, char *disp, char *guess_hist, char guess);
 void prnt_array(char *title, char *array);
 
 int main(int argc, char *argv[]){
@@ -55,10 +55,12 @@ int main(int argc, char *argv[]){
     int playing = 1;
     int round = 0; 		// Number of rounds  played. When negative, game exits.
     int wins = 0;		// Number of wins during this runtime.
+    
     while (playing == 1){
-    // Prompt Player to Start Round or continue based on whether this is the initial round.
+        
+    // Prompt Player to Start initial or additional Round (continue).
         if (round > 0){
-            printf("Round %d.\nYou have lost %d men so far.\nDo you want to keep playing?\n(y for yes. <!> to quit.)\n", round, (unsigned)round - wins);
+            printf("Round %d.\nYou have lost %d times so far.\nDo you want to keep playing?\n(y for yes. <!> to quit.)\n", round, (unsigned)round - wins);
         } else {
             printf("ARE YOU READY TO PLAY HANGMAN?\n(y for yes. <!> to quit.)\n");
         }
@@ -66,25 +68,23 @@ int main(int argc, char *argv[]){
     // Request input
         char input = get_input(*stdin);
         
-// Start Move this to get_input
         if (input == ('y' | 'Y')){
             round++;
-            
         } else if(input == ('n' | 'N')){
             
         } else if(input == ( '@' )){
-            round = -1;
+            
+// Insert code to save metrics at end of game.
+            playing = 0;
         } else {
             printf("Invalid input.\n(type y for yes or <!> to quit.");
         }
-// End Move this to get_input
         
-        for ( ;round >= 1; round++){
+        while (round >= 1){
         // Reset each round
-            int appendage = 7;      // Number of body parts left on the man.
+            int appendage = 0;      // Number of body parts on the gallows.
             char plyr_guesses[35] = { '\0' };
             char display_string[36] = { '\0' };
-            int turns = 1;          // Number of turns.
             
             // Set up Display Arrays
             // Put the number of blanks in the word into an array of the same size.
@@ -97,25 +97,33 @@ int main(int argc, char *argv[]){
                 }
             }
             
-            for (; turns > 0; turns++){
-                
-                char *word_str = "The Word:\n";
-                prnt_array(word_str, display_string);
-                char *guess_str = "Guessed So Far:\n";
-                prnt_array(guess_str, plyr_guesses);
+            while ((appendage >= 0) && (appendage < 7)){
+                int g_result;
+                char *wrd_str = "The Word:\n";
+                char *gus_str = "Guessed So Far:\n";
+                prnt_array(wrd_str, display_string);
+                prnt_array(gus_str, plyr_guesses);
                 
                 char guess = get_input(*stdin);
-                int g_result = check_guess(secr_word, display_string, plyr_guesses, guess, appendage);
+                // Check the guess and set how many appendages to add to gallows
+                g_result = check_guess(secr_word, display_string, plyr_guesses, guess);
                 
-                if (g_result == 0){
+                if (g_result == 1){
+                    appendage++;
+// If feasible, CHANGE to switch
+                }else if (g_result >1){
+                    printf("ERROR\n");
+                }else if (g_result < 0){
+                    printf("You won!\n");
 // CREATE AND CALL Function to Save round data
-                    turns = -1;
-                    round = 0;
-                    playing = 0;
+                    appendage = -10;
                 }
-                
-            }
             
+            }
+            if (appendage == -10){
+                appendage = 0;
+                break;
+            }
         }
         
     }
@@ -135,14 +143,13 @@ int dict_pick(char *chosen_word, char *d_path, int *err){
         fprintf(stderr, " Error opening dictionary file at %s\n %s\n", d_path, strerror(*err));
         return 2;                           // No such file or directory
     }else{
-    
         char *tmp_word = NULL;              // Current word in dictionary file.
         size_t tmp_word_sz = 0;             // Size in bytes of current word.
         int l = 1;                          // Line Count
         
         // Cycle through dictionary, pick a word at random, return that word.
         while((int)(tmp_word_sz = getline(&tmp_word, &tmp_word_sz, dict)) != -1){
-                   // Populate tmp_word one line at a time until EOF
+            // Populate tmp_word one line at a time until EOF
 // debug    printf("CHECKING: %s\n", tmp_word);
             if (tmp_word_sz <= MAX_WORD_SZ && tmp_word_sz > 1){
                 // Resavoir sampling to pick a random word from the file.
@@ -156,13 +163,13 @@ int dict_pick(char *chosen_word, char *d_path, int *err){
             }
             // Pick Word
             else {
-                //                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
+//                printf("Incompatable word in dictionary file, LINE %d.\n\tContinuing without errant word.\n", l);
             }
         }
         free(tmp_word);
         fclose(dict);
-    return 0;
-}
+        return 0;
+    }
 }
 
 char get_input(FILE stdin){
@@ -192,14 +199,18 @@ char get_input(FILE stdin){
     return '!';
 }
 
-
-int check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
+///// check_guess:
+// returns amount of appendages to add
+// or -10 if win.
+int check_guess(char *word, char *disp, char *guess_hist, char guess){
     int match = 0;          // increments when a match is found.
+    int wincrement = 0;     // counts all total matches so far.
+
 // X - Check to see if word guessed before
     for (int x = 0; x < (int)strlen(word); x++){
         if (guess == guess_hist[x]){
             printf("You already Guessed that Letter. Try again.\n");
-            return 1;       // Returns 1 to game; still playing.
+            return 0;       // Returns 0 to game; appendages remains the same.
         }
     }
 // Y - Check to see if word = the secret word; then check for win.
@@ -207,32 +218,24 @@ int check_guess(char *word, char *disp, char *guess_hist, char guess, int app){
         if (guess == word[y]){
             disp[y] = guess;        // Set corresponding display character to the guess.
             match++;
-            
-            int wincrement = 0;
-            
-            if (disp[y] == word[y]){
+        }
+    }
+    strncat(guess_hist, &guess, 1); // Will not run if already guessed (due to order)
+// Z - Add guess to history or add appendage.
+    if (match > 0){
+        for (int z = 0; z < (int)strlen(disp); z++){
+            if (disp[z] == word[z]){
                 wincrement++;
-                if (wincrement == (int)strlen(word)){
-                    return 0;       // Return 0; User won.
-                }
-            } else if (match > 0){
-                return 1;           // Return 1; Still Playing
             }
         }
-    }
-    if (match > 0){
-        strncat(guess_hist, &guess, 1);
-    } else {
-        printf("Incorrect.\n%d appendages left.", app);
-        // Add a body part to the gallows
-        app++;
-        if (app == 6){
-            return -1;              // return -1, user lost
-        } else {
-            return 1;
+        if (wincrement == (int)strlen(word)){
+            return -10;       // Return 0; User won.
         }
+    } else {
+        printf("Guess incorrect.\n");
+        return 1;                   // Return 1; extra appendage to the gallows.
     }
-    return -2;                      // Error
+    return 0;                     // Error
 }
 
 
